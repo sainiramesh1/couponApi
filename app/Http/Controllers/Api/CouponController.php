@@ -9,6 +9,18 @@ use Log;
 
 class CouponController extends Controller
 {
+
+        /**
+     * Generate Coupon
+     * @param string $code coupon code
+     * @param float $amount Amount
+     * @param string $expiry 
+     * @param string $lat_to Destination Latitude
+     * @param string $lng_to Destination Longitude
+     * @param string $radius_km Radius in KM 
+     * @return json 
+     */ 
+
     function generate_coupon(Request $request){
         // Validation 
 
@@ -36,18 +48,30 @@ class CouponController extends Controller
         return response()->json(['success'=>1,'msg'=>'Coupon Created Succefully']);
 
     }
-
+        /**
+     * Get Coupon List
+     * @param int $only_active 1 for active only
+     * @return json 
+     */ 
     function get_coupons(Request $request, Coupon $coupon){
         if($request->only_active==1)
             $coupon->where('status',1);
         $coupons = $coupon->get();
         return response()->json(['success'=>1,'msg'=>'Coupons','data'=>$coupons]);
     }
-
+    /**
+     * Check Coupon Availability
+     * @param string $code coupon code
+     * @param string $lat_from Origin Latitude
+     * @param string $lng_from Origin Longitude
+     * @param string $lat_to Destination Latitude
+     * @param string $lng_to Destination Longitude
+     * @return json 
+     */ 
     function check_validity(Request $request, Coupon $coupon){
         $coupon = $coupon->where('code',$request->code)->first();
         Log::info('Looking for Coupon : '.$request->code);
-        if($coupon){
+        if($coupon && ($coupon->expiry_date=='' || $coupon->expiry_date>=now())){
             Log::info('Coupon : '.$request->code." Found");    
             if($coupon->lat!='' && $coupon->lng!='' && $coupon->radius_km>0){
                 $orig_distance = $this->haversineGreatCircleDistance(
@@ -66,8 +90,7 @@ class CouponController extends Controller
         return response()->json(['success'=>-1,'msg'=>'Invalid Coupon Or Expired Coupon']);
     }
 
-        //
-
+       
     /**
  * Calculates the great-circle distance between two points, with
  * the Haversine formula.
